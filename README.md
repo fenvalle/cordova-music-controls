@@ -10,7 +10,7 @@ Music controls for Cordova applications. Display a 'media' notification with pla
 - iOS 8+ (by [0505gonzalez](https://github.com/0505gonzalez))
 
 ## Installation
-`cordova plugin add https://github.com/homerours/cordova-music-controls-plugin`
+`cordova plugin add https://github.com/Ekaanth/cordova-music-controls-plugin`
 
 ## Methods
 - Create the media controls:
