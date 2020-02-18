@@ -20,6 +20,9 @@ updates to npm to make life easier for everyone.
 `npm install cordova-plugin-music-controls2`
 - Bleeding edge direct from github
 `cordova plugin add https://github.com/ghenry22/cordova-plugin-music-controls2`
+`cordova plugin add https://github.com/fenvalle/cordova-plugin-music-controls2`
+`cordova plugin add https://github.com/Ekaanth/cordova-music-controls-plugin`
+
 
 ## Methods
 - Create the media controls:

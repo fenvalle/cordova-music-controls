@@ -17,6 +17,8 @@ MusicControlsInfo * musicControlsSettings;
 @implementation MusicControls
 
 - (void) create: (CDVInvokedUrlCommand *) command {
+    
+        [self.commandDelegate runInBackground:^{
     NSDictionary * musicControlsInfoDict = [command.arguments objectAtIndex:0];
     MusicControlsInfo * musicControlsInfo = [[MusicControlsInfo alloc] initWithDictionary:musicControlsInfoDict];
     musicControlsSettings = musicControlsInfo;
@@ -25,7 +27,7 @@ MusicControlsInfo * musicControlsSettings;
         return;
     }
     
-    [self.commandDelegate runInBackground:^{
+
         MPNowPlayingInfoCenter * nowPlayingInfoCenter =  [MPNowPlayingInfoCenter defaultCenter];
         NSDictionary * nowPlayingInfo = nowPlayingInfoCenter.nowPlayingInfo;
         NSMutableDictionary * updatedNowPlayingInfo = [NSMutableDictionary dictionaryWithDictionary:nowPlayingInfo];
