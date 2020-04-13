@@ -1,9 +1,9 @@
 {
-  "name": "cordova-plugin-music-controls2",
+  "name": "cordova-music-controls",
   "version": "3.0.3",
   "description": "Music controls for Cordova apps",
   "cordova": {
-    "id": "cordova-plugin-music-controls2",
+    "id": "cordova-music-controls",
     "platforms": ["android", "windows", "ios"]
   },
   "repository": {
