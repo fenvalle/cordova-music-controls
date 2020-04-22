@@ -267,21 +267,19 @@ MusicControlsInfo * musicControlsSettings;
     }
 
     //Some functions are not available in earlier versions
-    if(floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_9_0){
-        if(musicControlsSettings.hasSkipForward){
-            commandCenter.skipForwardCommand.preferredIntervals = @[@(musicControlsSettings.skipForwardInterval)];
-            [commandCenter.skipForwardCommand setEnabled:true];
-            [commandCenter.skipForwardCommand addTarget: self action:@selector(skipForwardEvent:)];
-        }
-        if(musicControlsSettings.hasSkipBackward){
-            commandCenter.skipBackwardCommand.preferredIntervals = @[@(musicControlsSettings.skipForwardInterval)];
-            [commandCenter.skipBackwardCommand setEnabled:true];
-            [commandCenter.skipBackwardCommand addTarget: self action:@selector(skipBackwardEvent:)];
-        }
-        if(musicControlsSettings.hasScrubbing){
-            [commandCenter.changePlaybackPositionCommand setEnabled:true];
-            [commandCenter.changePlaybackPositionCommand addTarget:self action:@selector(changedThumbSliderOnLockScreen:)];
-        }
+    if(musicControlsSettings.hasSkipForward){
+        commandCenter.skipForwardCommand.preferredIntervals = @[@(musicControlsSettings.skipForwardInterval)];
+        [commandCenter.skipForwardCommand setEnabled:true];
+        [commandCenter.skipForwardCommand addTarget: self action:@selector(skipForwardEvent:)];
+    }
+    if(musicControlsSettings.hasSkipBackward){
+        commandCenter.skipBackwardCommand.preferredIntervals = @[@(musicControlsSettings.skipForwardInterval)];
+        [commandCenter.skipBackwardCommand setEnabled:true];
+        [commandCenter.skipBackwardCommand addTarget: self action:@selector(skipBackwardEvent:)];
+    }
+    if(musicControlsSettings.hasScrubbing){
+        [commandCenter.changePlaybackPositionCommand setEnabled:true];
+        [commandCenter.changePlaybackPositionCommand addTarget:self action:@selector(changedThumbSliderOnLockScreen:)];
     }
 }
 
@@ -293,13 +291,11 @@ MusicControlsInfo * musicControlsSettings;
     [commandCenter.nextTrackCommand removeTarget:self];
     [commandCenter.previousTrackCommand removeTarget:self];
     
-    if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_9_0) {
-        [commandCenter.changePlaybackPositionCommand setEnabled:false];
-        [commandCenter.changePlaybackPositionCommand removeTarget:self action:NULL];
-        [commandCenter.skipForwardCommand removeTarget:self];
-        [commandCenter.skipBackwardCommand removeTarget:self];
-    }
-    
+    [commandCenter.changePlaybackPositionCommand setEnabled:false];
+    [commandCenter.changePlaybackPositionCommand removeTarget:self action:NULL];
+    [commandCenter.skipForwardCommand removeTarget:self];
+    [commandCenter.skipBackwardCommand removeTarget:self];
+
     [self setLatestEventCallbackId:nil];
 }
 
