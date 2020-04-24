@@ -28,8 +28,8 @@
 - (MPRemoteCommandHandlerStatus) pauseEvent:(MPRemoteCommandEvent *) event;
 - (MPRemoteCommandHandlerStatus) nextTrackEvent:(MPRemoteCommandEvent *) event;
 - (MPRemoteCommandHandlerStatus) prevTrackEvent:(MPRemoteCommandEvent *) event;
-- (void) skipForwardEvent: (MPSkipIntervalCommandEvent *) event;
-- (void) skipBackwardEvent: (MPSkipIntervalCommandEvent *) event;
+- (MPRemoteCommandHandlerStatus) skipForwardEvent: (MPRemoteCommandEvent *) event;
+- (MPRemoteCommandHandlerStatus) skipBackwardEvent: (MPRemoteCommandEvent *) event;
 - (MPMediaItemArtwork *) createCoverArtwork: (NSString *) coverUri;
 - (bool) isCoverImageValid: (UIImage *) image;
 - (void) handleMusicControlsNotification:(NSNotification *) notification;

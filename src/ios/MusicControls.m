@@ -54,27 +54,31 @@ MusicControlsInfo * musicControlsSettings;
 }
 
 - (void) updateIsPlaying: (CDVInvokedUrlCommand *) command {
-    NSDictionary * musicControlsInfoDict = [command.arguments objectAtIndex:0];
-    MusicControlsInfo * musicControlsInfo = [[MusicControlsInfo alloc] initWithDictionary:musicControlsInfoDict];
-    NSNumber * elapsed = [NSNumber numberWithDouble:[musicControlsInfo elapsed]];
-    NSNumber * playbackRate = [NSNumber numberWithBool:[musicControlsInfo isPlaying]];
-    
-    if (!NSClassFromString(@"MPNowPlayingInfoCenter")) {
-        return;
-    }
+    [self.commandDelegate runInBackground:^{
+        NSDictionary * musicControlsInfoDict = [command.arguments objectAtIndex:0];
+        MusicControlsInfo * musicControlsInfo = [[MusicControlsInfo alloc] initWithDictionary:musicControlsInfoDict];
+        NSNumber * elapsed = [NSNumber numberWithDouble:[musicControlsInfo elapsed]];
+        NSNumber * playbackRate = [NSNumber numberWithBool:[musicControlsInfo isPlaying]];
+        
+        if (!NSClassFromString(@"MPNowPlayingInfoCenter")) {
+            return;
+        }
 
-    MPNowPlayingInfoCenter * nowPlayingCenter = [MPNowPlayingInfoCenter defaultCenter];
-    NSMutableDictionary * updatedNowPlayingInfo = [NSMutableDictionary dictionaryWithDictionary:nowPlayingCenter.nowPlayingInfo];
-    
-    [updatedNowPlayingInfo setObject:elapsed forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
-    [updatedNowPlayingInfo setObject:playbackRate forKey:MPNowPlayingInfoPropertyPlaybackRate];
-    nowPlayingCenter.nowPlayingInfo = updatedNowPlayingInfo;
+        MPNowPlayingInfoCenter * nowPlayingCenter = [MPNowPlayingInfoCenter defaultCenter];
+        NSMutableDictionary * updatedNowPlayingInfo = [NSMutableDictionary dictionaryWithDictionary:nowPlayingCenter.nowPlayingInfo];
+        
+        [updatedNowPlayingInfo setObject:elapsed forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
+        [updatedNowPlayingInfo setObject:playbackRate forKey:MPNowPlayingInfoPropertyPlaybackRate];
+        nowPlayingCenter.nowPlayingInfo = updatedNowPlayingInfo;
+    }];
 }
 
 // this was performing the full function of updateIsPlaying and just adding elapsed time update as well
 // moved the elapsed update into updateIsPlaying and made this just pass through to reduce code duplication
 - (void) updateElapsed: (CDVInvokedUrlCommand *) command {
-    [self updateIsPlaying:(command)];
+    [self.commandDelegate runInBackground:^{
+        [self updateIsPlaying:(command)];
+    }];
 }
 
 - (void) destroy: (CDVInvokedUrlCommand *) command {
@@ -124,7 +128,6 @@ MusicControlsInfo * musicControlsSettings;
     return coverImage != nil && ([coverImage CIImage] != nil || [coverImage CGImage] != nil);
 }
 
-//Handle seeking with the progress slider on lockscreen or control center
 - (MPRemoteCommandHandlerStatus)changedThumbSliderOnLockScreen:(MPChangePlaybackPositionCommandEvent *)event {
     NSString * seekTo = [NSString stringWithFormat:@"{\"message\":\"music-controls-seek-to\",\"position\":\"%f\"}", event.positionTime];
     CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:seekTo];
