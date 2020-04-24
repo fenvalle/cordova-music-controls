@@ -133,46 +133,39 @@ public class MusicControls extends CordovaPlugin {
 		activity.bindService(startServiceIntent, mConnection, Context.BIND_AUTO_CREATE);
 	}
 
-	@Override
 	public boolean execute(final String action, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
-		final Context context=this.cordova.getActivity().getApplicationContext();
-		final Activity activity=this.cordova.getActivity();
-
-		
 		if (action.equals("create")) {
 			final MusicControlsInfos infos = new MusicControlsInfos(args);
-			 final MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
+		 	final MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
 
+			this.cordova.getThreadPool().execute(() -> {
+				notification.updateNotification(infos);
 
-			this.cordova.getThreadPool().execute(new Runnable() {
-				public void run() {
-					notification.updateNotification(infos);
-					
-					// track title
-					metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, infos.track);
-					// artists
-					metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, infos.artist);
-					//album
-					metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, infos.album);
+				// track title
+				metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, infos.track);
+				// artists
+				metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, infos.artist);
+				//album
+				metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, infos.album);
 
-					Bitmap art = getBitmapCover(infos.cover);
-					if(art != null){
-						metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, art);
-						metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art);
+				Bitmap art = getBitmapCover(infos.cover);
+				if(art != null){
+					metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, art);
+					metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art);
 
-					}
-
-					mediaSessionCompat.setMetadata(metadataBuilder.build());
-
-					if(infos.isPlaying)
-						setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING);
-					else
-						setMediaPlaybackState(PlaybackStateCompat.STATE_PAUSED);
-
-					callbackContext.success("success");
 				}
+
+				mediaSessionCompat.setMetadata(metadataBuilder.build());
+
+				if(infos.isPlaying)
+					setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING);
+				else
+					setMediaPlaybackState(PlaybackStateCompat.STATE_PAUSED);
+
+				callbackContext.success("success");
 			});
 		}
+
 		else if (action.equals("updateIsPlaying")){
 			final JSONObject params = args.getJSONObject(0);
 			final boolean isPlaying = params.getBoolean("isPlaying");
@@ -185,25 +178,26 @@ public class MusicControls extends CordovaPlugin {
 			
 			callbackContext.success("success");
 		}
+
 		else if (action.equals("updateDismissable")){
 			final JSONObject params = args.getJSONObject(0);
 			final boolean dismissable = params.getBoolean("dismissable");
 			this.notification.updateDismissable(dismissable);
 			callbackContext.success("success");
 		}
+
 		else if (action.equals("destroy")){
 			this.notification.destroy();
 			this.mMessageReceiver.stopListening();
 			callbackContext.success("success");
 		}
+
 		else if (action.equals("watch")) {
-			this.registerMediaButtonEvent();
-      			this.cordova.getThreadPool().execute(new Runnable() {
-				public void run() {
-          				mMediaSessionCallback.setCallback(callbackContext);
+      			this.cordova.getThreadPool().execute(() -> {
+					registerMediaButtonEvent();
+					mMediaSessionCallback.setCallback(callbackContext);
 					mMessageReceiver.setCallback(callbackContext);
-				}
-			});
+      			});
 		}
 		return true;
 	}
