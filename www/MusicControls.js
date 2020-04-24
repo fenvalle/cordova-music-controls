@@ -1,3 +1,4 @@
+var exec = require("cordova/exec");
 var musicControls = {
   updateCallback: function() {},
 
@@ -26,13 +27,13 @@ var musicControls = {
     data.closeIcon = !isUndefined(data.closeIcon) ? data.closeIcon : "";
     data.notificationIcon = !isUndefined(data.notificationIcon) ? data.notificationIcon : "";
 
-    cordova.exec(successCallback, errorCallback, "MusicControls", "create", [
+    exec(successCallback, errorCallback, "MusicControls", "create", [
       data
     ]);
   },
 
   updateIsPlaying: function(isPlaying, successCallback, errorCallback) {
-    cordova.exec(
+    exec(
       successCallback,
       errorCallback,
       "MusicControls",
@@ -41,7 +42,7 @@ var musicControls = {
     );
   },
   updateElapsed: function(args, successCallback, errorCallback) {
-    cordova.exec(
+    exec(
       successCallback,
       errorCallback,
       "MusicControls",
@@ -55,7 +56,7 @@ var musicControls = {
     );
   },
   updateDismissable: function(dismissable, successCallback, errorCallback) {
-    cordova.exec(
+    exec(
       successCallback,
       errorCallback,
       "MusicControls",
@@ -65,7 +66,7 @@ var musicControls = {
   },
 
   destroy: function(successCallback, errorCallback) {
-    cordova.exec(
+    exec(
       successCallback,
       errorCallback,
       "MusicControls",
@@ -80,7 +81,7 @@ var musicControls = {
   },
   // Start listening for events
   listen: function() {
-    cordova.exec(
+    exec(
       musicControls.receiveCallbackFromNative,
       function(res) {},
       "MusicControls",
@@ -90,7 +91,7 @@ var musicControls = {
   },
   receiveCallbackFromNative: function(messageFromNative) {
     musicControls.updateCallback(messageFromNative);
-    cordova.exec(
+    exec(
       musicControls.receiveCallbackFromNative,
       function(res) {},
       "MusicControls",
