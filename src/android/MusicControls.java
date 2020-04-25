@@ -139,30 +139,36 @@ public class MusicControls extends CordovaPlugin {
 		 	final MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
 
 			this.cordova.getThreadPool().execute(() -> {
-				notification.updateNotification(infos);
+				try {
+					final MusicControlsInfos infos = new MusicControlsInfos(args);
+					final MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
 
-				// track title
-				metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, infos.track);
-				// artists
-				metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, infos.artist);
-				//album
-				metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, infos.album);
+					notification.updateNotification(infos);
 
-				Bitmap art = getBitmapCover(infos.cover);
-				if(art != null){
-					metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, art);
-					metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art);
+					// track title
+					metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, infos.track);
+					// artists
+					metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, infos.artist);
+					//album
+					metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, infos.album);
 
+					Bitmap art = getBitmapCover(infos.cover);
+					if(art != null){
+						metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, art);
+						metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art);
+
+					}
+					mediaSessionCompat.setMetadata(metadataBuilder.build());
+
+					if(infos.isPlaying)
+						setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING);
+					else
+						setMediaPlaybackState(PlaybackStateCompat.STATE_PAUSED);
+
+					callbackContext.success("success");
+				} catch (JSONException e) {
+					callbackContext.error(e.getMessage());
 				}
-
-				mediaSessionCompat.setMetadata(metadataBuilder.build());
-
-				if(infos.isPlaying)
-					setMediaPlaybackState(PlaybackStateCompat.STATE_PLAYING);
-				else
-					setMediaPlaybackState(PlaybackStateCompat.STATE_PAUSED);
-
-				callbackContext.success("success");
 			});
 		}
 
