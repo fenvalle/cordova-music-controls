@@ -59,6 +59,9 @@
 
 	<platform name="ios">
 		<config-file target="config.xml" parent="/*">
+			<array>
+                <string>audio</string>
+            </array>
 			<feature name="MusicControls">
 				<param name="ios-package" value="MusicControls" />
 			</feature>

@@ -73,16 +73,33 @@ var musicControls = {
       "destroy",
       []
     );
+    this.updateCallback = null;
   },
+
+disablePlayCommand: function(scb, ecb) {exec(scb, ecb, "MusicControls", "disablePlayCommand", [])},
+enablePlayCommand: function(scb, ecb) {exec(scb, ecb, "MusicControls", "enablePlayCommand", [])},
+disablePauseCommand: function(scb, ecb) {exec(scb, ecb, "MusicControls", "disablePauseCommand", [])},
+enablePauseCommand: function(scb, ecb) {exec(scb, ecb, "MusicControls", "enablePauseCommand", [])},
+disableNextTrackCommand: function(scb, ecb) {exec(scb, ecb, "MusicControls", "disableNextTrackCommand", [])},
+enableNextTrackCommand: function(scb, ecb) {exec(scb, ecb, "MusicControls", "enableNextTrackCommand", [])},
+disablePreviousTrackCommand: function(scb, ecb) {exec(scb, ecb, "MusicControls", "disablePreviousTrackCommand", [])},
+enablePreviousTrackCommand: function(scb, ecb) {exec(scb, ecb, "MusicControls", "enablePreviousTrackCommand", [])},
+disableTogglePlayPauseCommand: function(scb, ecb) {exec(scb, ecb, "MusicControls", "disableTogglePlayPauseCommand", [])},
+enableTogglePlayPauseCommand: function(scb, ecb) {exec(scb, ecb, "MusicControls", "enableTogglePlayPauseCommand", [])},
+disableChangePlaybackPositionCommand: function(scb, ecb) {exec(scb, ecb, "MusicControls", "disableChangePlaybackPositionCommand", [])},
+enableChangePlaybackPositionCommand: function(scb, ecb) {exec(scb, ecb, "MusicControls", "enableChangePlaybackPositionCommand", [])},
 
   // Register callback
   subscribe: function(onUpdate) {
     musicControls.updateCallback = onUpdate;
   },
   // Start listening for events
-  listen: function() {
+  listen: function(msg = null) {
+    if (!musicControls.updateCallback) return;
+    
+    if (msg) musicControls.updateCallback(msg);
     exec(
-      musicControls.receiveCallbackFromNative,
+      musicControls.listen,
       function(res) {},
       "MusicControls",
       "watch",
