@@ -1,6 +1,6 @@
 //
 //  MusicControls.m
-//  
+//
 //
 //  Created by Juan Gonzalez on 12/16/16.
 //  Updated by Gaven Henry on 11/7/17 for iOS 11 compatibility & new features
@@ -24,37 +24,34 @@ BOOL _commandCenterRegistered;
 }
 
 - (void) create: (CDVInvokedUrlCommand *) command {
-        [self.commandDelegate runInBackground:^{
+[self.commandDelegate runInBackground:^{
 
     NSDictionary * musicControlsInfoDict = [command.arguments objectAtIndex:0];
     MusicControlsInfo * musicControlsInfo = [[MusicControlsInfo alloc] initWithDictionary:musicControlsInfoDict];
     musicControlsSettings = musicControlsInfo;
-        
+    
+        if (!NSClassFromString(@"MPNowPlayingInfoCenter")) { return; }
         
         MPNowPlayingInfoCenter * nowPlayingCenter =  [MPNowPlayingInfoCenter defaultCenter];
         NSDictionary * nowPlayingInfo = nowPlayingCenter.nowPlayingInfo;
         NSMutableDictionary * updatedNowPlayingInfo = [NSMutableDictionary dictionaryWithDictionary:nowPlayingInfo];
         
         MPMediaItemArtwork * mediaItemArtwork = [self createCoverArtwork:[musicControlsInfo cover]];
-        NSNumber * duration = [NSNumber numberWithInt:[musicControlsInfo duration]];
-        NSNumber * elapsed = [NSNumber numberWithInt:[musicControlsInfo elapsed]];
-        NSNumber * playbackRate = [NSNumber numberWithBool:[musicControlsInfo isPlaying]];
-        
         if (mediaItemArtwork != nil) {
             [updatedNowPlayingInfo setObject:mediaItemArtwork forKey:MPMediaItemPropertyArtwork];
         }
         
-        [updatedNowPlayingInfo setObject:[musicControlsInfo artist] forKey:MPMediaItemPropertyArtist];
-        [updatedNowPlayingInfo setObject:[musicControlsInfo track] forKey:MPMediaItemPropertyTitle];
-        [updatedNowPlayingInfo setObject:[musicControlsInfo album] forKey:MPMediaItemPropertyAlbumTitle];
-        [updatedNowPlayingInfo setObject:duration forKey:MPMediaItemPropertyPlaybackDuration];
-        [updatedNowPlayingInfo setObject:elapsed forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
-        [updatedNowPlayingInfo setObject:playbackRate forKey:MPNowPlayingInfoPropertyPlaybackRate];
+        updatedNowPlayingInfo[MPMediaItemPropertyArtist] = musicControlsInfo.artist;
+        updatedNowPlayingInfo[MPMediaItemPropertyAlbumTitle] = musicControlsInfo.album;
+        updatedNowPlayingInfo[MPMediaItemPropertyTitle] = musicControlsInfo.track;
+        updatedNowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = [NSNumber numberWithFloat:[musicControlsInfo duration]];
+        updatedNowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] =[NSNumber numberWithFloat:[musicControlsInfo elapsed]];
+        updatedNowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = [NSNumber numberWithBool:[musicControlsInfo isPlaying]];
         
         nowPlayingCenter.nowPlayingInfo = updatedNowPlayingInfo;
-    }];
+}];
 
-    [self registerMusicControlsEventListener];
+[self registerMusicControlsEventListener];
 }
 
 - (void) updateIsPlaying: (CDVInvokedUrlCommand *) command {
@@ -312,7 +309,7 @@ BOOL _commandCenterRegistered;
 //There are only 3 button slots available so next/prev track and skip forward/back cannot both be enabled
 //skip forward/back will take precedence if both are enabled
 // musicControlsSettings is the object received from json
-- (void) registerMusicControlsEventListener { 
+- (void) registerMusicControlsEventListener {
     if (_commandCenterRegistered) return;
     [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleMusicControlsNotification:) name:@"musicControlsEventNotification" object:nil];
@@ -327,14 +324,14 @@ BOOL _commandCenterRegistered;
     [commandCenter.nextTrackCommand addTarget:self action:@selector(nextTrackEvent:)];
     [commandCenter.previousTrackCommand setEnabled:true];
     [commandCenter.previousTrackCommand addTarget:self action:@selector(prevTrackEvent:)];
-    [commandCenter.togglePlayPauseCommand setEnabled:true];
-    [commandCenter.togglePlayPauseCommand addTarget:self action:@selector(togglePlayPauseTrackEvent:)];
+    //[commandCenter.togglePlayPauseCommand setEnabled:true];
+    //[commandCenter.togglePlayPauseCommand addTarget:self action:@selector(togglePlayPauseTrackEvent:)];
 
     commandCenter.skipForwardCommand.preferredIntervals = @[@(musicControlsSettings.skipForwardInterval)];
-    [commandCenter.skipForwardCommand setEnabled:true];
+    [commandCenter.skipForwardCommand setEnabled:false];
     [commandCenter.skipForwardCommand addTarget: self action:@selector(skipForwardEvent:)];
     commandCenter.skipBackwardCommand.preferredIntervals = @[@(musicControlsSettings.skipForwardInterval)];
-    [commandCenter.skipBackwardCommand setEnabled:true];
+    [commandCenter.skipBackwardCommand setEnabled:false];
     [commandCenter.skipBackwardCommand addTarget: self action:@selector(skipBackwardEvent:)];
     [commandCenter.changePlaybackPositionCommand setEnabled:true];
     [commandCenter.changePlaybackPositionCommand addTarget:self action:@selector(changedThumbSliderOnLockScreen:)];
