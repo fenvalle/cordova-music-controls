@@ -19,8 +19,6 @@ import android.net.Uri;
 
 import android.app.NotificationChannel;
 
-import androidx.annotation.RequiresApi;
-
 public class MusicControlsNotification {
 	private Activity cordovaActivity;
 	private NotificationManager notificationManager;
@@ -130,7 +128,6 @@ public class MusicControlsNotification {
 		}
 	}
 
-	@RequiresApi(api = Build.VERSION_CODES.M)
 	private void createBuilder(){
 		Context context = cordovaActivity;
 		Notification.Builder builder = new Notification.Builder(context);
