@@ -37,10 +37,9 @@ public class MusicControlsNotification {
 		NotificationChannel popup = new NotificationChannel(
 				this.CHANNEL_ID,
 				"Audio Controls",
-				NotificationManager.IMPORTANCE_DEFAULT
+				NotificationManager.IMPORTANCE_LOW
 		);
 		popup.setDescription("Control Playing Audio");
-		popup.enableLights(true);
 		popup.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
 
 		this.notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -215,8 +214,10 @@ public class MusicControlsNotification {
 				.setStyle(new Notification.MediaStyle().setShowActionsInCompactView(args))
 				.setPriority(Notification.PRIORITY_MAX)
 				.setVisibility(Notification.VISIBILITY_PUBLIC)
-				.setColor(context.getColor(android.R.color.holo_blue_dark))
-				.setCategory(Notification.CATEGORY_NAVIGATION);
+				.setCategory(Notification.CATEGORY_PROGRESS);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+			builder.setColor(context.getColor(android.R.color.holo_blue_dark));
+		}
 		this.notificationBuilder = builder;
 	}
 
