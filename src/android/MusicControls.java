@@ -4,7 +4,6 @@ import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -16,7 +15,6 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 
-import android.util.Log;
 import android.app.Activity;
 import android.content.Context;
 import android.content.IntentFilter;
@@ -24,11 +22,9 @@ import android.content.Intent;
 import android.app.PendingIntent;
 import android.content.ServiceConnection;
 import android.content.ComponentName;
-import android.app.Service;
 import android.os.IBinder;
-import android.os.Bundle;
 import android.os.Build;
-import android.R;
+import android.os.PowerManager;
 import android.content.BroadcastReceiver;
 import android.media.AudioManager;
 
@@ -39,6 +35,8 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import static android.os.PowerManager.PARTIAL_WAKE_LOCK;
+
 public class MusicControls extends CordovaPlugin {
 	private MusicControlsBroadcastReceiver mMessageReceiver;
 	private MusicControlsNotification notification;
@@ -47,11 +45,12 @@ public class MusicControls extends CordovaPlugin {
 	private AudioManager mAudioManager;
 	private PendingIntent mediaButtonPendingIntent;
 	private boolean mediaButtonAccess=true;
-
-  	private Activity cordovaActivity;
+	private Activity cordovaActivity;
+	
+	private Intent startServiceIntent;
+	private PowerManager.WakeLock wakeLock;
 
 	private MediaSessionCallback mMediaSessionCallback = new MediaSessionCallback();
-
 
 	private void registerBroadcaster(MusicControlsBroadcastReceiver mMessageReceiver){
 		final Context context = this.cordova.getActivity().getApplicationContext();
@@ -62,11 +61,11 @@ public class MusicControls extends CordovaPlugin {
 		context.registerReceiver((BroadcastReceiver)mMessageReceiver, new IntentFilter("music-controls-media-button"));
 		context.registerReceiver((BroadcastReceiver)mMessageReceiver, new IntentFilter("music-controls-destroy"));
 
-		// Listen for headset plug/unplug
+	// Listen for headset plug/unplug
 		context.registerReceiver((BroadcastReceiver)mMessageReceiver, new IntentFilter(Intent.ACTION_HEADSET_PLUG));
 	}
 
-	// Register pendingIntent for broacast
+	// Register pendingIntent for broadcast
 	public void registerMediaButtonEvent(){
 		this.mediaSessionCompat.setMediaButtonReceiver(this.mediaButtonPendingIntent);
 	}
@@ -85,7 +84,7 @@ public class MusicControls extends CordovaPlugin {
 		final Activity activity = this.cordova.getActivity();
 		final Context context=activity.getApplicationContext();
 
-    		this.cordovaActivity = activity;
+		this.cordovaActivity = activity;
 
 		this.notification = new MusicControlsNotification(activity,this.notificationID);
 		this.mMessageReceiver = new MusicControlsBroadcastReceiver(this);
@@ -117,12 +116,22 @@ public class MusicControls extends CordovaPlugin {
 			public void onServiceConnected(ComponentName className, IBinder binder) {
 				((KillBinder) binder).service.startService(new Intent(activity, MusicControlsNotificationKiller.class));
 			}
-			public void onServiceDisconnected(ComponentName className) {
-			}
+			public void onServiceDisconnected(ComponentName className) { }
 		};
-		Intent startServiceIntent = new Intent(activity,MusicControlsNotificationKiller.class);
-		startServiceIntent.putExtra("notificationID",this.notificationID);
-		activity.bindService(startServiceIntent, mConnection, Context.BIND_AUTO_CREATE);
+		this.startServiceIntent = new Intent(activity,MusicControlsNotificationKiller.class);
+		this.startServiceIntent.putExtra("notificationID",this.notificationID);
+		activity.bindService(this.startServiceIntent, mConnection, Context.BIND_AUTO_CREATE);
+
+		PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
+		wakeLock = pm.newWakeLock(PARTIAL_WAKE_LOCK, "backgroundmode:wakelock");
+		wakeLock.acquire();
+
+		//startForegroundService
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			context.startForegroundService(this.startServiceIntent);
+		} else {
+			context.startService(this.startServiceIntent);
+		}
 	}
 
 	@Override
@@ -213,6 +222,12 @@ public class MusicControls extends CordovaPlugin {
 		this.mMessageReceiver.stopListening();
 		this.unregisterMediaButtonEvent();
 		super.onDestroy();
+
+		final Context context = this.cordova.getActivity().getApplicationContext();
+		context.stopService(this.startServiceIntent);
+		if (wakeLock == null) return;
+		wakeLock.release();
+		wakeLock = null;
 	}
 
 	@Override
