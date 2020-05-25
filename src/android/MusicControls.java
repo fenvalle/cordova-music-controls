@@ -49,7 +49,6 @@ public class MusicControls extends CordovaPlugin {
 	private boolean mediaButtonAccess=true;
 	private Activity cordovaActivity;
 	public boolean inBackground = false;
-	private boolean isBind = false;
 	private ServiceConnection mConnection;
 	private enum BackgroundEvent { ACTIVATE, DEACTIVATE, FAILURE }
 
@@ -264,22 +263,17 @@ public class MusicControls extends CordovaPlugin {
 	private void startService()
 	{
 		LOG.d("LOG", "Start Service");
-		Activity context = cordova.getActivity();
-		if (isBind) return;
-		Intent intent = new Intent(context, MusicControlsNotificationKiller.class);
+		Intent intent = new Intent(cordovaActivity, MusicControlsNotificationKiller.class);
 		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
 		try {
-			context.bindService(intent, mConnection, BIND_AUTO_CREATE);
+			//cordovaActivity.bindService(intent, mConnection, BIND_AUTO_CREATE);
 			fireEvent(BackgroundEvent.ACTIVATE, null);
-			context.startService(intent);
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-				cordovaActivity.getApplicationContext().startForegroundService(intent);
-			}
+			//cordovaActivity.startService(intent);
+			//if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) cordovaActivity.startForegroundService(intent);
+			//else cordovaActivity.startService(intent);
 		} catch (Exception e) {
 			fireEvent(BackgroundEvent.FAILURE, String.format("'%s'", e.getMessage()));
 		}
-
-		isBind = true;
 	}
 
 	private void stopService()
@@ -288,12 +282,8 @@ public class MusicControls extends CordovaPlugin {
 		Activity context = cordova.getActivity();
 		Intent intent    = new Intent(context, MusicControlsNotificationKiller.class);
 
-		if (!isBind) return;
-
 		fireEvent(BackgroundEvent.DEACTIVATE, null);
 		context.stopService(intent);
-
-		isBind = false;
 	}
 
 	private MusicControlsNotificationKiller service;
