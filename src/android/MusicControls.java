@@ -4,6 +4,7 @@ import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
+import org.apache.cordova.LOG;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,6 +28,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.content.BroadcastReceiver;
 import android.media.AudioManager;
+import android.view.View;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -35,7 +37,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import static android.os.PowerManager.PARTIAL_WAKE_LOCK;
+import static android.content.Context.BIND_AUTO_CREATE;
 
 public class MusicControls extends CordovaPlugin {
 	private MusicControlsBroadcastReceiver mMessageReceiver;
@@ -46,10 +48,12 @@ public class MusicControls extends CordovaPlugin {
 	private PendingIntent mediaButtonPendingIntent;
 	private boolean mediaButtonAccess=true;
 	private Activity cordovaActivity;
-	
-	private Intent startServiceIntent;
-	private PowerManager.WakeLock wakeLock;
+	public boolean inBackground = false;
+	private boolean isBind = false;
+	private ServiceConnection mConnection;
+	private enum BackgroundEvent { ACTIVATE, DEACTIVATE, FAILURE }
 
+	private Intent startServiceIntent;
 	private MediaSessionCallback mMediaSessionCallback = new MediaSessionCallback();
 
 	private void registerBroadcaster(MusicControlsBroadcastReceiver mMessageReceiver){
@@ -64,6 +68,11 @@ public class MusicControls extends CordovaPlugin {
 	// Listen for headset plug/unplug
 		context.registerReceiver((BroadcastReceiver)mMessageReceiver, new IntentFilter(Intent.ACTION_HEADSET_PLUG));
 	}
+
+	private BroadcastReceiver receiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) { cordova.getActivity().finish(); }
+	};
 
 	// Register pendingIntent for broadcast
 	public void registerMediaButtonEvent(){
@@ -83,7 +92,7 @@ public class MusicControls extends CordovaPlugin {
 		super.initialize(cordova, webView);
 		final Activity activity = this.cordova.getActivity();
 		final Context context=activity.getApplicationContext();
-
+		cordova.getActivity().registerReceiver(receiver, new IntentFilter(("MusicControls")));
 		this.cordovaActivity = activity;
 
 		this.notification = new MusicControlsNotification(activity,this.notificationID);
@@ -120,12 +129,11 @@ public class MusicControls extends CordovaPlugin {
 		};
 		this.startServiceIntent = new Intent(activity,MusicControlsNotificationKiller.class);
 		this.startServiceIntent.putExtra("notificationID",this.notificationID);
+		this.startServiceIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+		PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, this.startServiceIntent, PendingIntent.FLAG_CANCEL_CURRENT);
 		activity.bindService(this.startServiceIntent, mConnection, Context.BIND_AUTO_CREATE);
 
-		PowerManager pm = (PowerManager)context.getSystemService(Context.POWER_SERVICE);
-		wakeLock = pm.newWakeLock(PARTIAL_WAKE_LOCK, "backgroundmode:wakelock");
-		wakeLock.acquire();
-
+		this.mConnection = mConnection;
 		//startForegroundService
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 			context.startForegroundService(this.startServiceIntent);
@@ -137,7 +145,7 @@ public class MusicControls extends CordovaPlugin {
 	@Override
 	public boolean execute(final String action, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
 		final Context context=this.cordova.getActivity().getApplicationContext();
-		final Activity activity=this.cordova.getActivity();
+
 		if (action.equals("create")) {
 			final MusicControlsInfos infos = new MusicControlsInfos(args);
 			 final MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
@@ -215,9 +223,29 @@ public class MusicControls extends CordovaPlugin {
 		}
 		return true;
 	}
+	public void onPause(boolean multitasking)
+	{
+		LOG.d("LOG", "Paused the activity.");
+		try {
+			inBackground = true;
+			startService();
+			disableWebViewOptimizations();
+		} finally {
+		}
+	}
+	public void onStop () {
+		LOG.d("LOG", "Stopped the activity.");
+	}
+	public void onResume (boolean multitasking)
+	{
+		LOG.d("LOG", "Resumed the activity.");
+		inBackground = false;
+		stopService();
+	}
 
 	@Override
 	public void onDestroy() {
+		stopService();
 		this.notification.destroy();
 		this.mMessageReceiver.stopListening();
 		this.unregisterMediaButtonEvent();
@@ -225,9 +253,6 @@ public class MusicControls extends CordovaPlugin {
 
 		final Context context = this.cordova.getActivity().getApplicationContext();
 		context.stopService(this.startServiceIntent);
-		if (wakeLock == null) return;
-		wakeLock.release();
-		wakeLock = null;
 	}
 
 	@Override
@@ -235,6 +260,85 @@ public class MusicControls extends CordovaPlugin {
 		onDestroy();
 		super.onReset();
 	}
+
+	private void startService()
+	{
+		LOG.d("LOG", "Start Service");
+		Activity context = cordova.getActivity();
+		if (isBind) return;
+		Intent intent = new Intent(context, MusicControlsNotificationKiller.class);
+		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+		try {
+			context.bindService(intent, mConnection, BIND_AUTO_CREATE);
+			fireEvent(BackgroundEvent.ACTIVATE, null);
+			context.startService(intent);
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+				cordovaActivity.getApplicationContext().startForegroundService(intent);
+			}
+		} catch (Exception e) {
+			fireEvent(BackgroundEvent.FAILURE, String.format("'%s'", e.getMessage()));
+		}
+
+		isBind = true;
+	}
+
+	private void stopService()
+	{
+		LOG.d("LOG", "stop Service");
+		Activity context = cordova.getActivity();
+		Intent intent    = new Intent(context, MusicControlsNotificationKiller.class);
+
+		if (!isBind) return;
+
+		fireEvent(BackgroundEvent.DEACTIVATE, null);
+		context.stopService(intent);
+
+		isBind = false;
+	}
+
+	private MusicControlsNotificationKiller service;
+
+	private void fireEvent (BackgroundEvent event, String params)
+	{
+		String eventName = event.name().toLowerCase();
+		Boolean active   = event == BackgroundEvent.ACTIVATE;
+
+		String str = String.format("%s._setActive(%b)", "MusicControls", active);
+		str = String.format("%s;%s.on('%s', %s)", str, "MusicControls", eventName, params);
+		str = String.format("%s;%s.fireEvent('%s',%s);", str, "MusicControls", eventName, params);
+		final String js = str;
+
+		cordova.getActivity().runOnUiThread(() -> webView.loadUrl("javascript:" + js));
+	}
+
+	private void disableWebViewOptimizations() {
+		Thread thread = new Thread(){
+			public void run() {
+				try {
+					Thread.sleep(1000);
+					cordova.getActivity().runOnUiThread(() -> {
+						View view = webView.getView();
+						LOG.d("LOG", "sleep action");
+
+						try {
+							Class.forName("org.crosswalk.engine.XWalkCordovaView")
+									.getMethod("onShow")
+									.invoke(view);
+
+							LOG.d("LOG", "disabling webviewOptimizations");
+						} catch (Exception e){
+							view.dispatchWindowVisibilityChanged(View.VISIBLE);
+						}
+					});
+				} catch (InterruptedException e) { }
+			}
+		};
+
+		thread.start();
+	}
+
+
+
 	private void setMediaPlaybackState(int state) {
 		PlaybackStateCompat.Builder playbackstateBuilder = new PlaybackStateCompat.Builder();
 		if( state == PlaybackStateCompat.STATE_PLAYING ) {
