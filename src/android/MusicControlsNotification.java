@@ -143,16 +143,10 @@ public class MusicControlsNotification {
 		if (!infos.ticker.isEmpty()){ builder.setTicker(infos.ticker); }
 
 		//Set SmallIcon
-		boolean usePlayingIcon = infos.notificationIcon.isEmpty();
-		if(usePlayingIcon) {
-			if (infos.isPlaying){
-				builder.setSmallIcon(this.getResourceId(infos.playIcon, android.R.drawable.ic_media_play));
-			} else {
-				builder.setSmallIcon(this.getResourceId(infos.pauseIcon, android.R.drawable.ic_media_pause));
-			}
-		}
-		String icon = infos.isPlaying ? infos.playIcon : infos.pauseIcon;
-		builder.setSmallIcon(this.getResourceId(icon, android.R.drawable.ic_media_play));
+		int resId = infos.notificationIcon.isEmpty() ? 0 : this.getResourceId(infos.notificationIcon, 0);
+		if (resId > 0) builder.setSmallIcon(resId);
+		else if (infos.isPlaying) builder.setSmallIcon(this.getResourceId(infos.playIcon, android.R.drawable.ic_media_play));
+		else builder.setSmallIcon(this.getResourceId(infos.pauseIcon, android.R.drawable.ic_media_pause));
 
 		//Set LargeIcon
 		if (!infos.cover.isEmpty() && this.bitmapCover != null){
