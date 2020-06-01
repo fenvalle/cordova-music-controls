@@ -45,20 +45,22 @@ public class MusicControlsNotification {
 	}
 	public void updateDismissable(boolean value){
 		this.infos.dismissable=value;
+		displayNotification();
 	}
 
 	public void setInBackground(boolean newStatus) {
 		this.inBackground = newStatus;
-		if (newStatus == true) {
-			this.service.keepAwake();
-			this.service.startForeground(this.createNotification());
-		}
-		else {
-			this.service.sleepWell();
-			this.displayNotification();
-		}
+		displayNotification();
 	}
+
 	private void displayNotification() {
+		if (this.inBackground && this.infos.isPlaying == true) {
+			this.service.keepAwake();
+			this.service.startForeground(createNotification());
+			return;
+		} else if (this.inBackground && this.infos.isPlaying == false) {
+			this.service.stopForegroundNotification(false);
+		}
 		this.notificationManager.notify(this.notificationID, createNotification());
 	}
 
@@ -123,6 +125,7 @@ public class MusicControlsNotification {
 	public void destroy(){
 		if(Build.VERSION.SDK_INT >= 26) notificationManager.deleteNotificationChannel(this.CHANNEL_ID);
 		this.notificationManager.cancel(this.notificationID);
+		this.service.stopForegroundNotification(true);
 		this.service.sleepWell();
 	}
 }
