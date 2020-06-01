@@ -54,14 +54,15 @@ public class MusicControlsNotification {
 	}
 
 	private void displayNotification() {
+		Notification notification = createNotification();
+		this.notificationManager.notify(this.notificationID, notification);
+
 		if (this.inBackground && this.infos.isPlaying == true) {
 			this.service.keepAwake();
-			this.service.startForeground(createNotification());
-			return;
+			this.service.startForeground(notification);
 		} else if (this.inBackground && this.infos.isPlaying == false) {
 			this.service.stopForegroundNotification(false);
 		}
-		this.notificationManager.notify(this.notificationID, createNotification());
 	}
 
 	private Notification createNotification() {
