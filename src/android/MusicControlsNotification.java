@@ -126,7 +126,10 @@ public class MusicControlsNotification {
 	public void destroy(){
 		if(Build.VERSION.SDK_INT >= 26) notificationManager.deleteNotificationChannel(this.CHANNEL_ID);
 		this.notificationManager.cancel(this.notificationID);
-		this.service.stopForegroundNotification(true);
-		this.service.sleepWell();
+		try {
+			this.service.stopForegroundNotification(true);
+		} finally {
+			this.service.sleepWell();
+		}
 	}
 }
