@@ -100,7 +100,7 @@ public class MusicControlsNotification {
 				.setColor(Color.BLACK)
 				.setShowWhen(false)
 				.setStyle(new MediaStyle().setShowActionsInCompactView(args).setMediaSession(mediaSessionCompat.getSessionToken()))
-				.setPriority(Notification.PRIORITY_MAX)
+				.setPriority(Notification.PRIORITY_LOW)
 				.setVisibility(Notification.VISIBILITY_PUBLIC)
 				.setCategory(Notification.CATEGORY_PROGRESS)
 				.setTicker(infos.ticker.isEmpty() ? "" : infos.ticker);
