@@ -94,7 +94,7 @@ public class MusicControlsNotification {
 				.setSmallIcon(smallIcon)
 				.setSound(null)
 				.setDeleteIntent(PendingIntent.getBroadcast(cordovaActivity, 1, new Intent("music-controls-destroy"), 0))
-				.setOngoing(!(infos.dismissable && infos.isPlaying == false))
+				.setOngoing(infos.dismissable && infos.isPlaying)
 				.setContentTitle(infos.track)
 				.setContentText(infos.artist)
 				.setSubText(infos.ticker)
