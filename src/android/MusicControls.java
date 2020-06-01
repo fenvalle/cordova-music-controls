@@ -100,6 +100,7 @@ public class MusicControls extends CordovaPlugin {
 	//received destroy
 	public void destroyPlayerNotification(){
 		if (this.listening == false) return;
+
 		this.hasInstance = false;
 		this.listening = false;
 		this.unregisterMediaButtonEvent();
@@ -118,8 +119,8 @@ public class MusicControls extends CordovaPlugin {
 				this.cordova.getThreadPool().execute(() -> {
 					try {
 						this.bitmapCover = getBitmapCover(infos.cover);
-						this.notification.updateCurrentBitmap(this.bitmapCover);
-						this.notification.updateNotification(infos);
+						this.notification.createNotification(infos, this.bitmapCover);
+
 						setMediaPlaybackState(infos.isPlaying ? PlaybackStateCompat.STATE_PLAYING : PlaybackStateCompat.STATE_PAUSED);
 						metadataBuilder
 							.putString(MediaMetadataCompat.METADATA_KEY_TITLE, infos.track)
@@ -128,6 +129,7 @@ public class MusicControls extends CordovaPlugin {
 						if(this.bitmapCover != null) metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, this.bitmapCover);
 						if(this.bitmapCover != null) metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, this.bitmapCover);
 						mediaSessionCompat.setMetadata(metadataBuilder.build());
+
 						callbackContext.success("success");
 					} catch (Exception ex) { callbackContext.error(ex.getMessage()); }
 				});
@@ -175,22 +177,20 @@ public class MusicControls extends CordovaPlugin {
 	}
 	public void onPause(boolean multitasking)
 	{
-		if (listening == false) return;
+		if (this.listening == false) return;
 		if (this.hasInstance == false) return;
 
 		try {
 			this.notification.setInBackground(true);
-			this.notification.displayNotification();
 			disableWebViewOptimizations();
 		} finally { }
 	}
 	public void onResume (boolean multitasking) {
-		if (listening == false) return;
-		if (hasInstance == false) return;
+		if (this.listening == false) return;
+		if (this.hasInstance == false) return;
 
 		try {
 			this.notification.setInBackground(false);
-			this.notification.resumeActivity();
 		} finally { }
 	}
 

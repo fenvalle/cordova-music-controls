@@ -51,24 +51,29 @@ public class MusicControlsNotificationKiller extends Service {
 
 	public void keepAwake()
 	{
-		if (foregroundStarted) return;
+		if (foregroundStarted == true) return;
 		PowerManager pm = (PowerManager)getSystemService(POWER_SERVICE);
 		wakeLock = pm.newWakeLock(PARTIAL_WAKE_LOCK, "MusicControls:NotificationKiller");
 		wakeLock.acquire();
-		foregroundStarted = true;
 	}
 	public void startForeground(Notification notification) {
-		startForeground(NOTIFICATION_ID, notification);
+		try {
+			startForeground(NOTIFICATION_ID, notification);
+			foregroundStarted = true;
+		}
+		finally { }
 	}
 	public void sleepWell()
 	{
 		if (foregroundStarted == false) return;
-
-		stopForeground(true);
-		this.foregroundStarted = false;
-		if (wakeLock == null) return;
-		if (wakeLock.isHeld()) { try { wakeLock.release(); } catch (Exception e) { } }
-		wakeLock = null;
+		try {
+			stopForeground(true);
+			this.foregroundStarted = false;
+			if (wakeLock == null) return;
+			if (wakeLock.isHeld()) { try { wakeLock.release(); } catch (Exception e) { } }
+		} finally {
+			wakeLock = null;
+		}
 	}
 
 }

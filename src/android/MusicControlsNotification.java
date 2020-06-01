@@ -33,9 +33,8 @@ public class MusicControlsNotification {
 		this.notificationManager = (NotificationManager) cordovaActivity.getSystemService(Context.NOTIFICATION_SERVICE);
 	}
 
-	public void updateCurrentBitmap(Bitmap bitmap) { this.bitmapCover = bitmap; }
-
-	public void updateNotification(MusicControlsInfos newInfos) {
+	public void createNotification(MusicControlsInfos newInfos, Bitmap bitmap) {
+		this.bitmapCover = bitmap;
 		this.infos = newInfos;
 		displayNotification();
 	}
@@ -47,43 +46,40 @@ public class MusicControlsNotification {
 	public void updateDismissable(boolean value){
 		this.infos.dismissable=value;
 	}
+
 	public void setInBackground(boolean newStatus) {
 		this.inBackground = newStatus;
-	}
-	public void resumeActivity() {
-		this.service.sleepWell();
-		this.displayNotification();
-	}
-	public void displayNotification() {
-		Notification notification = createNotification();
-		if (this.inBackground) {
-			this.service.startForeground(notification); this.service.keepAwake();
+		if (newStatus == true) {
+			this.service.keepAwake();
+			this.service.startForeground(this.createNotification());
 		}
 		else {
-			this.notificationManager.notify(this.notificationID, notification);
+			this.service.sleepWell();
+			this.displayNotification();
 		}
 	}
+	private void displayNotification() {
+		this.notificationManager.notify(this.notificationID, createNotification());
+	}
 
-	private Notification createNotification(){
+	private Notification createNotification() {
 		if (Build.VERSION.SDK_INT >= 26) {
 			NotificationChannel channel = new NotificationChannel(this.CHANNEL_ID, "Audio Controls", NotificationManager.IMPORTANCE_LOW);
 			channel.setDescription("Control Playing Audio");
 			channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
 			this.notificationManager.createNotificationChannel(channel);
 		};
+
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(cordovaActivity.getApplicationContext(), CHANNEL_ID);
 
 		int smallIcon = infos.notificationIcon.isEmpty() ? 0 : this.getResourceId(infos.notificationIcon, 0);
-		if (smallIcon == 0 && infos.isPlaying) smallIcon = this.getResourceId(infos.playIcon, android.R.drawable.ic_media_play);
-		if (smallIcon == 0 && !infos.isPlaying) smallIcon = this.getResourceId(infos.pauseIcon, android.R.drawable.ic_media_pause);
+		if (smallIcon == 0) smallIcon = infos.isPlaying ? this.getResourceId(infos.playIcon, android.R.drawable.ic_media_play) : this.getResourceId(infos.pauseIcon, android.R.drawable.ic_media_pause);
 
 		if (infos.hasPrev) builder.addAction(this.getResourceId(infos.prevIcon, android.R.drawable.ic_media_previous), "", PendingIntent.getBroadcast(cordovaActivity, 1, new Intent("music-controls-previous"), 0));
 		if (!infos.isPlaying) builder.addAction(this.getResourceId(infos.playIcon, android.R.drawable.ic_media_play), "", PendingIntent.getBroadcast(cordovaActivity, 1, new Intent("music-controls-play"), 0));
 		if (infos.isPlaying)  builder.addAction(this.getResourceId(infos.pauseIcon, android.R.drawable.ic_media_pause), "", PendingIntent.getBroadcast(cordovaActivity, 1, new Intent("music-controls-pause"), 0));
 		if (infos.hasNext) builder.addAction(this.getResourceId(infos.nextIcon, android.R.drawable.ic_media_next), "", PendingIntent.getBroadcast(cordovaActivity, 1, new Intent("music-controls-next"), 0));
-		//stop
 		if (!infos.isPlaying) builder.addAction(this.getResourceId("media_stop", android.R.drawable.ic_media_ff), "", PendingIntent.getBroadcast(cordovaActivity, 1, new Intent("music-controls-destroy"), 0));
-		
 
 		int buttons = infos.hasPrev ? infos.hasNext ? 3: 2: 1;
 		int[] args = new int[buttons];
@@ -94,7 +90,8 @@ public class MusicControlsNotification {
 				.setSmallIcon(smallIcon)
 				.setSound(null)
 				.setDeleteIntent(PendingIntent.getBroadcast(cordovaActivity, 1, new Intent("music-controls-destroy"), 0))
-				.setOngoing(!(infos.dismissable && infos.isPlaying == false))
+				.setContentIntent(pendingIntent)
+				.setOngoing(infos.dismissable && infos.isPlaying)
 				.setContentTitle(infos.track)
 				.setContentText(infos.artist)
 				.setSubText(infos.ticker)
@@ -106,8 +103,8 @@ public class MusicControlsNotification {
 				.setPriority(Notification.PRIORITY_MAX)
 				.setVisibility(Notification.VISIBILITY_PUBLIC)
 				.setCategory(Notification.CATEGORY_PROGRESS)
-				.setTicker(infos.ticker.isEmpty() ? "" : infos.ticker)
-				.setContentIntent(pendingIntent);
+				.setTicker(infos.ticker.isEmpty() ? "" : infos.ticker);
+
 		if (Build.VERSION.SDK_INT >= 26) builder.setColorized(true);
 		if (this.bitmapCover != null && !infos.cover.isEmpty()) builder.setLargeIcon(this.bitmapCover);
 		return builder.build();
