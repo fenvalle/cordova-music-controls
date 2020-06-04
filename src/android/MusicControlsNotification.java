@@ -55,13 +55,15 @@ public class MusicControlsNotification {
 
 	private void displayNotification() {
 		Notification notification = createNotification();
-		this.notificationManager.notify(this.notificationID, notification);
 
 		if (this.inBackground && this.infos.isPlaying == true) {
 			this.service.keepAwake();
 			this.service.startForeground(notification);
 		} else if (this.inBackground && this.infos.isPlaying == false) {
 			this.service.stopForegroundNotification(false);
+		}
+		else {
+			this.notificationManager.notify(this.notificationID, notification);
 		}
 	}
 
@@ -124,8 +126,10 @@ public class MusicControlsNotification {
 	}
 
 	public void destroy(){
-		if(Build.VERSION.SDK_INT >= 26) notificationManager.deleteNotificationChannel(this.CHANNEL_ID);
-		this.notificationManager.cancel(this.notificationID);
+		try {
+			if(Build.VERSION.SDK_INT >= 26) notificationManager.deleteNotificationChannel(this.CHANNEL_ID);
+			this.notificationManager.cancel(this.notificationID);
+		} finally {}
 		try {
 			this.service.stopForegroundNotification(true);
 		} finally {
