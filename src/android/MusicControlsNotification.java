@@ -58,11 +58,11 @@ public class MusicControlsNotification {
 		this.notificationManager.notify(this.notificationID, notification);
 
 		if (this.inBackground && this.infos.isPlaying == true) {
-			this.service.keepAwake();
 			this.service.startForeground(notification);
+			this.service.keepAwake();
 		} else if (this.inBackground && this.infos.isPlaying == false) {
-			this.service.sleepWell();
 			this.service.stopForegroundNotification(false);
+			this.service.sleepWell();
 		}
 	}
 
