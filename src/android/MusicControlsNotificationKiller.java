@@ -76,10 +76,8 @@ public class MusicControlsNotificationKiller extends Service {
 	public void sleepWell()
 	{
 		try {
-			wakeLock.release();
-		} finally {
+			if (wakeLock != null && wakeLock.isHeld()) wakeLock.release();
 			wakeLock = null;
-		}
+		} finally { }
 	}
-
 }
